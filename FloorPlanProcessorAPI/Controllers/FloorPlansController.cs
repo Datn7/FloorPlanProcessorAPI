@@ -42,25 +42,34 @@ namespace FloorPlanProcessor.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            var svgFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "svgs");
+            Directory.CreateDirectory(svgFolder);
+
+            var svgFileName = Path.GetFileNameWithoutExtension(uniqueFileName) + ".svg";
+            var svgFilePath = Path.Combine(svgFolder, svgFileName);
+
+            var processor = new FloorPlanProcessorService();
+            processor.ProcessAndGenerateSvg(filePath, svgFilePath);
+
             var floorPlan = new FloorPlan
             {
                 UserId = userId,
                 FileName = uniqueFileName,
-                SvgPath = "", // To be updated after Python processing
+                SvgPath = svgFileName,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.FloorPlans.Add(floorPlan);
             await _context.SaveChangesAsync();
 
-            // TODO: Call Python microservice here, update SvgPath, and save changes
-
             return Ok(new
             {
-                Message = "File uploaded successfully",
+                Message = "File uploaded and processed successfully",
                 FloorPlanId = floorPlan.Id,
-                FileName = floorPlan.FileName
+                FileName = floorPlan.FileName,
+                SvgPath = floorPlan.SvgPath
             });
+
         }
 
         // GET: api/FloorPlans
